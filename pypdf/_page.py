@@ -1950,12 +1950,15 @@ class PageObject(DictionaryObject):
                         # A name is a str too, but not text to show
                         if isinstance(op, (str, bytes)) and not isinstance(op, NameObject):
                             extractor.process_operation(b"Tj", [op])
-                        if isinstance(op, (int, float, NumberObject, FloatObject)) and (
-                            abs(float(op)) >= _confirm_space_width
-                            and extractor.text
-                            and extractor.text[-1] != " "
-                        ):
-                            extractor.process_operation(b"Tj", [" "])
+                        if isinstance(op, (int, float, NumberObject, FloatObject)):
+                            extractor.handle_tj_offset(
+                                float(op),
+                                insert_space=(
+                                    abs(float(op)) >= _confirm_space_width
+                                    and bool(extractor.text)
+                                    and extractor.text[-1] != " "
+                                ),
+                            )
             elif operator == b"TD" and len(operands) >= 2:
                 extractor.process_operation(b"TL", [-operands[1]])
                 extractor.process_operation(b"Td", operands)

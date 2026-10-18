@@ -138,6 +138,27 @@ class TextExtraction:
         self.rtl_dir = False
         self._line_span = None
 
+    def handle_tj_offset(self, offset: float, insert_space: bool) -> None:
+        """
+        Handle a number inside a TJ array.
+
+        The number shifts the next glyph by ``-offset / 1000`` text space units,
+        so it has to be part of the advance which is compared against the next
+        text position. Otherwise, a kerned run followed by a small gap looks
+        like it is separated by a space (#4067).
+
+        Args:
+            offset: The TJ array number, in thousandths of text space units.
+            insert_space: Whether the offset is large enough to be extracted as
+                a space. This synthetic space has no width of its own, as the
+                offset already covers the gap.
+
+        """
+        str_widths = self._actual_str_size["str_widths"]
+        if insert_space:
+            self.process_operation(b"Tj", [" "])
+        self._actual_str_size["str_widths"] = str_widths - offset * self.font_size
+
     def compute_str_widths(self, str_widths: float) -> float:
         return str_widths / 1000
 

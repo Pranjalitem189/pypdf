@@ -1454,3 +1454,21 @@ def test_simple_font_character_widths_with_differences_encoding() -> None:
     groups = text_show_operations(ops, page._layout_mode_fonts())
     advance = sum(g["displaced_tx"] - g["tx"] for g in groups)
     assert f"{advance:.1f}" == "25.2"
+
+
+@pytest.mark.parametrize(
+    ("next_x", "expected"),
+    [
+        # Helvetica "AB" at 12 pt is 16.008 wide, the kerning moves it by 1.2 and half a space is 1.668.
+        (90.208, "ABC"),  # gap of 1.0 after the kerned run
+        (92.208, "AB C"),  # gap of 3.0 after the kerned run
+    ],
+)
+def test_tj_offsets_count_towards_the_advance(next_x: float, expected: str) -> None:
+    """Tests for #4067: a kerned run followed by a small gap is not separated by a space."""
+    buffer = _page_with_helvetica(
+        b"BT /F1 12 Tf 1 0 0 1 72 700 Tm [-100 (AB)] TJ "
+        b"1 0 0 1 " + str(next_x).encode() + b" 700 Tm (C) Tj ET"
+    )
+
+    assert PdfReader(buffer).pages[0].extract_text() == expected
